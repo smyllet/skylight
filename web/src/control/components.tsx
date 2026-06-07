@@ -1,5 +1,6 @@
 // Small, touch-friendly control primitives for the phone settings panel.
 
+import { useState } from "react";
 import type { ReactNode } from "react";
 
 export function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -107,5 +108,99 @@ export function ColorRow({
       <span>{label}</span>
       <input type="color" value={value} onChange={(e) => onChange(e.target.value)} />
     </label>
+  );
+}
+
+export function NumberInput({
+  value,
+  min,
+  max,
+  step,
+  unit = "",
+  onChange,
+}: {
+  value: number;
+  min?: number;
+  max?: number;
+  step?: number;
+  unit?: string;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div className="number-input">
+      <input
+        type="number"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+      />
+      {unit && <span className="number-unit">{unit}</span>}
+    </div>
+  );
+}
+
+export function LocationSearch({
+  onSelect,
+}: {
+  onSelect: (lat: number, lon: number) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSearch = async () => {
+    if (!query.trim()) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
+        {
+          headers: {
+            "User-Agent": "CeilingTracker/1.0",
+          },
+        },
+      );
+      
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      
+      const results = await res.json();
+      
+      if (!results || results.length === 0) {
+        throw new Error("No results found");
+      }
+      
+      const result = results[0];
+      onSelect(parseFloat(result.lat), parseFloat(result.lon));
+      setQuery("");
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Search failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="location-search">
+      <input
+        type="text"
+        placeholder="Search address..."
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+        disabled={loading}
+      />
+      <button onClick={handleSearch} disabled={loading || !query.trim()}>
+        {loading ? "..." : "Search"}
+      </button>
+      {error && <span className="location-error">{error}</span>}
+    </div>
   );
 }

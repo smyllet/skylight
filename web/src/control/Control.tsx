@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Config, ShowFields } from "@shared/index.js";
 import { useStream } from "../lib/useStream.js";
 import { nextISSPass, type Tle } from "../display/celestial.js";
-import { ColorRow, Row, Section, Segmented, Slider, Toggle } from "./components.js";
+import { ColorRow, LocationSearch, NumberInput, Row, Section, Segmented, Slider, Toggle } from "./components.js";
 
 function skyTimeLabel(offsetMin: number): string {
   if (offsetMin === 0) return "live";
@@ -92,6 +92,17 @@ export function Control() {
           <Row label="Radius">
             <Slider value={cfg.radiusMiles} min={0.5} max={10} step={0.5} unit="mi"
               onChange={(v) => set({ radiusMiles: v })} />
+          </Row>
+          <Row label="Location" hint="search by address">
+            <LocationSearch onSelect={(lat, lon) => set({ centerLat: lat, centerLon: lon })} />
+          </Row>
+          <Row label="Center Latitude">
+            <NumberInput value={cfg.centerLat} min={-90} max={90} step={0.0001}
+              onChange={(v) => set({ centerLat: v })} />
+          </Row>
+          <Row label="Center Longitude">
+            <NumberInput value={cfg.centerLon} min={-180} max={180} step={0.0001}
+              onChange={(v) => set({ centerLon: v })} />
           </Row>
         </Section>
 
