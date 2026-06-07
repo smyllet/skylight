@@ -27,6 +27,11 @@ import { AIRPORTS } from "./airports.js";
 import { classifyGlyph, drawAircraftGlyph, GLYPH_SCALE } from "./aircraftGlyph.js";
 import { computeSky, type Sky, type Tle } from "./celestial.js";
 import { ASTERISMS } from "./stars.js";
+import {
+  formatAltitude,
+  formatDistance,
+  formatSpeed,
+} from "@shared/units.js";
 
 /** How far in the past we render, ms. Just over the ~1 Hz fix interval. */
 const RENDER_DELAY_MS = 1150;
@@ -803,9 +808,9 @@ export class Renderer {
     const alt = ac.altBaro ?? ac.altGeom;
     if (f.altitude) {
       if (ac.onGround) sub.push("GND");
-      else if (alt != null) sub.push(`${alt.toLocaleString("en-US")} ft`);
+      else if (alt != null) sub.push(formatAltitude(alt, cfg.unitSystem));
     }
-    if (f.speed && ac.gs != null) sub.push(`${Math.round(ac.gs)} kt`);
+    if (f.speed && ac.gs != null) sub.push(formatSpeed(ac.gs, cfg.unitSystem));
     if (sub.length) out.push({ text: sub.join("   "), kind: "sub" });
 
     if (f.destination && ac.destination && routePlausible(ac, cfg)) {
@@ -815,7 +820,7 @@ export class Renderer {
         const bits: string[] = [`${localTimeAt(ac.destLon)} local`];
         if (ac.lat != null && ac.lon != null) {
           const mi = Math.round(greatCircleMiles(ac.lat, ac.lon, ac.destLat, ac.destLon));
-          if (mi > 1) bits.push(`${mi.toLocaleString("en-US")} mi to go`);
+          if (mi > 1) bits.push(`${formatDistance(mi, cfg.unitSystem)} to go`);
         }
         out.push({ text: bits.join("   ·   "), kind: "sub" });
       }
@@ -944,8 +949,8 @@ export class Renderer {
     const bits = [
       ac.airline,
       ac.typeName ?? ac.typeCode,
-      ac.onGround ? "on ground" : dpAlt != null ? `${dpAlt.toLocaleString("en-US")} ft` : null,
-      ac.gs != null ? `${Math.round(ac.gs)} kt` : null,
+      ac.onGround ? "on ground" : dpAlt != null ? formatAltitude(dpAlt, cfg.unitSystem) : null,
+      ac.gs != null ? formatSpeed(ac.gs, cfg.unitSystem) : null,
       ac.origin && ac.destination && routePlausible(ac, cfg) ? `${ac.origin} → ${ac.destination}` : null,
     ].filter(Boolean);
     ctx.fillText(bits.join("    ·    "), x, y + 26);

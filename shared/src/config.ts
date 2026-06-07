@@ -6,6 +6,7 @@
 export type Theme = "ambient" | "telemetry" | "focus";
 export type LabelDensity = "all" | "nearestN" | "nearestOnly";
 export type DataSource = "radio" | "api";
+export type UnitSystem = "metric" | "imperial";
 
 export interface Palette {
   bg: string;
@@ -40,6 +41,9 @@ export interface Config {
   centerLat: number;
   centerLon: number;
   radiusMiles: number;
+
+  // --- units ---
+  unitSystem: UnitSystem;
 
   // --- calibration (tune against a real overhead pass) ---
   /** Rotate the whole field, degrees. */
@@ -116,6 +120,9 @@ export const DEFAULT_CONFIG: Config = {
   centerLat: 37.6213,
   centerLon: -122.379,
   radiusMiles: 3,
+
+  // Units: metric (km, m, km/h) or imperial (mi, ft, kn)
+  unitSystem: "imperial",
 
   rotationDeg: 0,
   mirrorX: true,

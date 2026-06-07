@@ -105,6 +105,14 @@ export function Control() {
               ]}
               onChange={(v) => set({ theme: v })} />
           </Row>
+          <Row label="Units">
+            <Segmented value={cfg.unitSystem}
+              options={[
+                { value: "imperial", label: "Imperial" },
+                { value: "metric", label: "Metric" },
+              ]}
+              onChange={(v) => set({ unitSystem: v })} />
+          </Row>
           <Row label="Brightness">
             <Slider value={cfg.brightness} min={0.1} max={1} step={0.05}
               onChange={(v) => set({ brightness: v })} />
