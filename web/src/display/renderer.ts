@@ -23,7 +23,7 @@ import {
   type Meters,
   type Point,
 } from "@shared/index.js";
-import { AIRPORTS } from "./airports.js";
+import { FALLBACK_AIRPORTS, loadAirports, resetAirportsCache, type Airport } from "./airports.js";
 import { classifyGlyph, drawAircraftGlyph, GLYPH_SCALE } from "./aircraftGlyph.js";
 import { computeSky, type Sky, type Tle } from "./celestial.js";
 import { ASTERISMS } from "./stars.js";
@@ -109,6 +109,10 @@ export class Renderer {
   private nextFrameDue = 0;
   /** Current frame time in seconds, for animating props/rotors. */
   private frameT = 0;
+  /** Cached airports loaded from API */
+  private airports: Airport[] = FALLBACK_AIRPORTS;
+  /** Last config used to load airports (to detect changes) */
+  private lastAirportConfig?: { lat: number; lon: number; radius: number };
 
   // Sky layer state.
   private tles: Tle[] = [];
@@ -129,6 +133,9 @@ export class Renderer {
   start(): void {
     void this.fetchTles();
     setInterval(() => void this.fetchTles(), 3600_000);
+    void this.loadAirports();
+    // Check for config changes (center/lat/lon) every 5 seconds
+    setInterval(() => this.checkAirportsReload(), 5000);
     const loop = (now: number) => {
       this.raf = requestAnimationFrame(loop);
       // Cap to maxFps via an accumulator: advance a running "due" time by whole
@@ -159,6 +166,33 @@ export class Renderer {
     } catch {
       /* keep whatever we had */
     }
+  }
+
+  private async loadAirports(): Promise<void> {
+    try {
+      const config = this.getConfig();
+      const currentConfig = { lat: config.centerLat, lon: config.centerLon, radius: config.radiusMiles };
+      
+      // Only reload if config changed
+      if (this.lastAirportConfig && 
+          this.lastAirportConfig.lat === currentConfig.lat &&
+          this.lastAirportConfig.lon === currentConfig.lon &&
+          this.lastAirportConfig.radius === currentConfig.radius) {
+        return;
+      }
+      
+      this.lastAirportConfig = currentConfig;
+      resetAirportsCache();
+      this.airports = await loadAirports(config);
+    } catch (err) {
+      console.error("[renderer] Failed to load airports:", err);
+      this.airports = FALLBACK_AIRPORTS;
+    }
+  }
+  
+  /** Check if we need to reload airports (called periodically) */
+  private checkAirportsReload(): void {
+    void this.loadAirports();
   }
   stop(): void {
     cancelAnimationFrame(this.raf);
@@ -415,7 +449,7 @@ export class Renderer {
   private drawAirport(cfg: Config, proj: ProjOpts): void {
     const ctx = this.ctx;
     const rwyRgb: [number, number, number] = [150, 180, 220];
-    for (const ap of AIRPORTS) {
+    for (const ap of this.airports) {
       let cx = 0;
       let cy = 0;
       let n = 0;

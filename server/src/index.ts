@@ -13,6 +13,7 @@ import { RouteEnricher } from "./enrich/routes.js";
 import { Poller } from "./datasource.js";
 import { Hub } from "./hub.js";
 import { TleStore } from "./tle.js";
+import { createAirportStore } from "./airports.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = resolve(__dirname, "../data");
@@ -43,6 +44,9 @@ async function main(): Promise<void> {
 
   const tleStore = new TleStore(resolve(DATA_DIR, "tle-cache.json"));
   await tleStore.load();
+
+  const airportStore = createAirportStore(DATA_DIR);
+  await airportStore.load();
 
   const app = express();
   app.use(express.json());
@@ -75,6 +79,19 @@ async function main(): Promise<void> {
   app.get("/api/aircraft", (_req, res) => res.json(poller.getSnapshot()));
   app.get("/api/status", (_req, res) => res.json(poller.getStatus()));
   app.get("/api/tle", async (_req, res) => res.json(await tleStore.get()));
+  app.get("/api/airports", (req, res) => {
+    const lat = parseFloat(req.query.lat as string);
+    const lon = parseFloat(req.query.lon as string);
+    const radius = parseFloat(req.query.radius as string) || 50;
+    
+    if (isNaN(lat) || isNaN(lon)) {
+      return res.status(400).json({ error: "lat and lon are required" });
+    }
+    
+    // Add 10 miles buffer to ensure airports at the edge are included
+    const airports = airportStore.getNearby(lat, lon, radius + 10);
+    res.json(airports);
+  });
   app.post("/api/source", (req, res) => {
     const s = req.body?.source;
     if (s !== "radio" && s !== "api") {
