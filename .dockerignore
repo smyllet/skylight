@@ -1,0 +1,24 @@
+node_modules
+npm-debug.log
+.pnpm-debug.log
+.git
+README.md
+LICENSE
+docs
+*.md
+*.tsbuildinfo
+.DS_Store
+node_modules/
+dist/
+*.log
+
+# runtime state (persisted config, route + TLE caches)
+server/data/
+data/
+
+# editor / OS
+.DS_Store
+.env
+.env.local
+.idea/
+.vscode/
